@@ -18,13 +18,8 @@ $model_dir = APPPATH.'modules/foolfuuka/classes/Foolz/Foolfuuka/Model/';
 
 \Autoloader::add_core_namespace('Foolz\\Foolfuuka\\Model');
 
-\Profiler::mark('Start sphinxql initialization');
-\Profiler::mark_memory(false, 'Start sphinxql initialization');
-
-\Package::load('sphinxql');
-
-\Profiler::mark('End sphinxql, Start stringparser-bbcode initialization');
-\Profiler::mark_memory(false, 'End sphinxql, Start stringparser-bbcode initialization');
+\Profiler::mark('Start stringparser-bbcode initialization');
+\Profiler::mark_memory(false, 'Start stringparser-bbcode initialization');
 
 \Package::load('stringparser-bbcode', APPPATH.'modules/foolfuuka/packages/stringparser-bbcode/');
 
