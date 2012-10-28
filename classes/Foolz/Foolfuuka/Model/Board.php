@@ -128,13 +128,13 @@ class Board extends \Model\Model_Base
 		{
 			if (method_exists($this, 'p_'.$this->method_counting))
 			{
-				\Profiler::mark('Start Board::getcomments() with method '.$this->method_counting);
-				\Profiler::mark_memory($this, 'Start Board::getcomments() with method '.$this->method_counting);
+				\Profiler::mark('Start Board::getCount() with method '.$this->method_counting);
+				\Profiler::mark_memory($this, 'Start Board::getCount() with method '.$this->method_counting);
 
 				$this->{$this->method_counting}();
 
-				\Profiler::mark('End Board::get_count() with method '.$this->method_counting);
-				\Profiler::mark_memory($this, 'End Board::get_count() with method '.$this->method_counting);
+				\Profiler::mark('End Board::getCount() with method '.$this->method_counting);
+				\Profiler::mark_memory($this, 'End Board::getCount() with method '.$this->method_counting);
 			}
 			else
 			{
@@ -187,6 +187,7 @@ class Board extends \Model\Model_Base
 	protected function p_setMethodFetching($name)
 	{
 		$this->method_fetching = $name;
+
 		return $this;
 	}
 
@@ -200,6 +201,7 @@ class Board extends \Model\Model_Base
 	protected function p_setMethodCounting($name)
 	{
 		$this->method_counting = $name;
+
 		return $this;
 	}
 
@@ -263,6 +265,7 @@ class Board extends \Model\Model_Base
 	protected function p_setRadix(\Foolz\Foolfuuka\Model\Radix $radix)
 	{
 		$this->radix = $radix;
+
 		return $this;
 	}
 
@@ -276,6 +279,7 @@ class Board extends \Model\Model_Base
 	protected function p_setApi($enable = [])
 	{
 		$this->api = $enable;
+
 		return $this;
 	}
 
@@ -334,11 +338,13 @@ class Board extends \Model\Model_Base
 		{
 			$result['num'] = $num;
 			$result['subnum'] = 0;
+
 			return $result;
 		}
 
 		$result['num'] = $arr[0];
 		$result['subnum'] = isset($arr[1]) ? $arr[1] : 0;
+
 		return $result;
 	}
 
@@ -414,7 +420,7 @@ class Board extends \Model\Model_Base
 			$this->comments_unsorted = [];
 
 			\Profiler::mark_memory($this, 'Board $this');
-			\Profiler::mark('Board::get_latestcomments End Prematurely');
+			\Profiler::mark('Board::getLatestComments End Prematurely');
 			return $this;
 		}
 
@@ -424,7 +430,10 @@ class Board extends \Model\Model_Base
 
 		foreach ($threads as $thread)
 		{
-			$threads_arr[$thread['unq_thread_num']] = ['replies' => $thread['nreplies'], 'images' => $thread['nimages']];
+			$threads_arr[$thread['unq_thread_num']] = [
+				'replies' => $thread['nreplies'],
+				'images' => $thread['nimages']
+			];
 
 			$temp = \DC::qb()
 				->select('*')
@@ -446,9 +455,9 @@ class Board extends \Model\Model_Base
 			->fetchAll();
 
 		// populate posts_arr array
+		$results = [];
 		$this->comments_unsorted = Comment::fromArrayDeep($query_posts, $this->radix, $this->comment_options);
 		\Profiler::mark_memory($this->comments_unsorted, 'Board $this->comments_unsorted');
-		$results = [];
 
 		foreach ($threads as $thread)
 		{
@@ -469,7 +478,9 @@ class Board extends \Model\Model_Base
 				}
 
 				if ( ! isset($results[$post->thread_num]['posts']))
+				{
 					$results[$post->thread_num]['posts'] = [];
+				}
 
 				array_unshift($results[$post->thread_num]['posts'], $post);
 			}
@@ -483,7 +494,8 @@ class Board extends \Model\Model_Base
 
 		\Profiler::mark_memory($this->comments, 'Board $this->comments');
 		\Profiler::mark_memory($this, 'Board $this');
-		\Profiler::mark('Board::get_latestcomments End');
+		\Profiler::mark('Board::getLatestComments End');
+
 		return $this;
 	}
 
@@ -494,7 +506,7 @@ class Board extends \Model\Model_Base
 	 */
 	protected function p_getLatestCount()
 	{
-		\Profiler::mark('Board::get_latest_count Start');
+		\Profiler::mark('Board::getLatestCount Start');
 		extract($this->options);
 
 		$type_cache = 'thread_num';
@@ -506,7 +518,7 @@ class Board extends \Model\Model_Base
 
 		try
 		{
-			$this->total_count = \Cache::get('Foolz_Foolfuuka_Model_Board.getLatestCount.result.'.$order);
+			$this->total_count = \Cache::get('Foolz_Foolfuuka_Model_Board.getLatestCount.result.'.$type_cache);
 			return $this;
 		}
 		catch(\CacheNotFoundException $e)
@@ -515,6 +527,8 @@ class Board extends \Model\Model_Base
 			{
 				// these two are the same
 				case 'by_post':
+					// no break
+
 				case 'by_thread':
 					$query_threads = \DC::qb()
 						->select('COUNT(thread_num) AS threads')
@@ -534,11 +548,12 @@ class Board extends \Model\Model_Base
 				->fetch();
 
 			$this->total_count = $result['threads'];
-			\Cache::set('Foolz_Foolfuuka_Model_Board.getLatestCount.result.'.$order, $this->total_count, 300);
+			\Cache::set('Foolz_Foolfuuka_Model_Board.getLatestCount.result.'.$type_cache, $this->total_count, 300);
 		}
 
 		\Profiler::mark_memory($this, 'Board $this');
-		\Profiler::mark('Board::get_latest_count End');
+		\Profiler::mark('Board::getLatestCount End');
+
 		return $this;
 	}
 
@@ -612,6 +627,7 @@ class Board extends \Model\Model_Base
 		\Profiler::mark_memory($this->comments, 'Board $this->comments');
 		\Profiler::mark_memory($this, 'Board $this');
 		\Profiler::mark('Board::get_threadscomments End');
+
 		return $this;
 	}
 
@@ -809,6 +825,7 @@ class Board extends \Model\Model_Base
 		\Profiler::mark_memory($this->comments, 'Board $this->comments');
 		\Profiler::mark_memory($this, 'Board $this');
 		\Profiler::mark('Board::get_threadcomments End');
+
 		return $this;
 	}
 
@@ -935,6 +952,7 @@ class Board extends \Model\Model_Base
 		extract($this->options);
 
 		$query = \DC::qb()
+			->select('*')
 			->from($this->radix->getTable(), 'r');
 
 		if (isset($num))
@@ -976,8 +994,7 @@ class Board extends \Model\Model_Base
 		}
 		else
 		{
-			// @todo for some reason Netbeans needs full namespace not to signal abstract
-			$this->comments_unsorted = new \Foolz\Foolfuuka\Model\Comment($result, $this->radix, $this->comment_options);
+			$this->comments_unsorted = Comment::fromArrayDeep($result, $this->radix, $this->comment_options);
 		}
 
 		foreach ($this->comments_unsorted as $comment)

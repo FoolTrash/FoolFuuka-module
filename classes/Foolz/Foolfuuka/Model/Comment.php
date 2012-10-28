@@ -120,31 +120,31 @@ class Comment extends \Model\Model_Base
 	public $extra = null;
 
 
-	public static function fromArrayDeep($post, $radix, $options = [])
+	public static function fromArrayDeep($posts, $radix, $options = [])
 	{
-		$array = array();
-		foreach ($post as $p)
+		$array = [];
+		foreach ($posts as $post)
 		{
-			$array[] = new  static($p, $radix, $options);
+			$array[] = new static($post, $radix, $options);
 		}
 
 		return $array;
 	}
 
 
-	public static function fromArrayDeepApi($post, $radix, $api, $options = [])
+	public static function fromArrayDeepApi($posts, $radix, $api, $options = [])
 	{
-		$array = array();
-		foreach ($post as $p)
+		$array = [];
+		foreach ($posts as $post)
 		{
-			$array[] = static::forgeForApi($p, $radix, $api, $options);
+			$array[] = static::forgeForApi($post, $radix, $api, $options);
 		}
 
 		return $array;
 	}
 
 
-	public static function forgeForApi($post, $radix, $api, $options = array())
+	public static function forgeForApi($post, $radix, $api, $options = [])
 	{
 		$comment = new static($post, $radix, $options);
 
@@ -167,7 +167,7 @@ class Comment extends \Model\Model_Base
 			if (($comment->media->banned && ! \Auth::has_access('media.see_banned'))
 				|| ($comment->media->radix->hide_thumbnails && ! \Auth::has_access('media.see_hidden')))
 			{
-				$banned = array(
+				$banned = [
 					'media_id' => 0,
 					'spoiler' => false,
 					'preview_orig' => null,
@@ -191,7 +191,7 @@ class Comment extends \Model\Model_Base
 					'remote_media_link' => null,
 					'media_link' => null,
 					'thumb_link' => null,
-				);
+				];
 
 				foreach ($banned as $key => $item)
 				{
@@ -233,7 +233,7 @@ class Comment extends \Model\Model_Base
 	}
 
 
-	public function __construct($post, $board, $options = array())
+	public function __construct($post, $board, $options = [])
 	{
 		$post = $post;
 		$this->radix = $board;
@@ -305,7 +305,7 @@ class Comment extends \Model\Model_Base
 			$this->poster_country_name = \Config::get('geoip_codes.codes.'.strtoupper($this->poster_country));
 		}
 
-		$num = $this->num.($this->subnum ? ',' . $this->subnum : '');
+		$num = $this->num.($this->subnum ? ','.$this->subnum : '');
 		static::$_posts[$this->thread_num][] = $num;
 	}
 
@@ -648,7 +648,7 @@ class Comment extends \Model\Model_Base
 		{
 			if(count(array_filter(preg_split('/\r\n|\r|\n/', $content))) > 1)
 			{
-				return '<pre>' . $content . '</pre>';
+				return '<pre>'.$content.'</pre>';
 			}
 		}
 
@@ -670,7 +670,7 @@ class Comment extends \Model\Model_Base
 			}
 		}
 
-		return $params['start_tag'] . $content . $params['end_tag'];
+		return $params['start_tag'].$content.$params['end_tag'];
 	}
 
 
@@ -691,8 +691,8 @@ class Comment extends \Model\Model_Base
 		$data->board = $this->radix;
 		$data->post = $this;
 
-		$current_p_num_c = $this->num . ($this->subnum ? ',' . $this->subnum : '');
-		$current_p_num_u = $this->num . ($this->subnum ? '_' . $this->subnum : '');
+		$current_p_num_c = $this->num.($this->subnum ? ','.$this->subnum : '');
+		$current_p_num_u = $this->num.($this->subnum ? '_'.$this->subnum : '');
 
 		$build_url = [
 			'tags' => ['', ''],
@@ -757,10 +757,12 @@ class Comment extends \Model\Model_Base
 
 	public function getBacklinks()
 	{
-		if (isset(static::$_backlinks_arr[$this->num . ($this->subnum ? '_' . $this->subnum : '')]))
+		$num = $this->subnum ? $this->num.'_'.$this->subnum : $this->num;
+
+		if (isset(static::$_backlinks_arr[$num]))
 		{
-			ksort(static::$_backlinks_arr[$this->num . ($this->subnum ? '_' . $this->subnum : '')]);
-			return static::$_backlinks_arr[$this->num . ($this->subnum ? '_' . $this->subnum : '')];
+			ksort(static::$_backlinks_arr[$num]);
+			return static::$_backlinks_arr[$num];
 		}
 
 		return [];
@@ -821,9 +823,6 @@ class Comment extends \Model\Model_Base
 		}
 
 		return implode('<a href="' . \Uri::create($data->board->shortname) . '">&gt;&gt;&gt;' . $data->link . '</a>', $build_href['tags']);
-
-		// return un-altered
-		return $matches[0];
 	}
 
 
@@ -837,6 +836,7 @@ class Comment extends \Model\Model_Base
 	public function buildComment()
 	{
 		$theme = \Theme::instance('foolfuuka');
+
 		return $theme->build('board_comment', ['p' => $this], true, true);
 	}
 
@@ -950,6 +950,7 @@ class Comment extends \Model\Model_Base
 			->setParameter(':board_id', $this->radix->id)
 			->setParameter(':doc_id', $this->doc_id)
 			->execute();
+
 		if ($reports_affected > 0)
 		{
 			\Report::clearCache();
@@ -1036,18 +1037,12 @@ class Comment extends \Model\Model_Base
 			$posts = \DC::forge()->executeQuery($sql, [':thread_num' => $this->thread_num])
 				->fetchAll();
 
-			$post_op = null;
 			$time_last = null;
 			$time_bump = null;
 			$time_ghost = null;
 			$time_ghost_bump = null;
 			foreach ($posts as $post)
 			{
-				if ($post['op'])
-				{
-					$post_op = $post;
-				}
-
 				if ( ! $post['subnum'] && $time_last < $post['timestamp'])
 				{
 					$time_last = $post['timestamp'];
@@ -1115,12 +1110,12 @@ class Comment extends \Model\Model_Base
 			if (count($matches_trip) > 1)
 			{
 				$normal_trip = static::processTripcode($matches_trip[1]);
-				$normal_trip = $normal_trip ? '!' . $normal_trip : '';
+				$normal_trip = $normal_trip ? '!'.$normal_trip : '';
 			}
 
 			if (count($matches_trip) > 2)
 			{
-				$secure_trip = '!!' . static::processSecureTripcode($matches_trip[2]);
+				$secure_trip = '!!'.static::processSecureTripcode($matches_trip[2]);
 			}
 		}
 
@@ -1146,7 +1141,7 @@ class Comment extends \Model\Model_Base
 
 		$trip = mb_convert_encoding($plain, 'SJIS', 'UTF-8');
 
-		$salt = substr($trip . 'H.', 1, 2);
+		$salt = substr($trip.'H.', 1, 2);
 		$salt = preg_replace('/[^.-z]/', '.', $salt);
 		$salt = strtr($salt, ':;<=>?@[\]^_`', 'ABCDEFGabcdef');
 

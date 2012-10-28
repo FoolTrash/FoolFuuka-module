@@ -257,6 +257,7 @@ class Report extends \Model\Model_Base
 	public static function getAll()
 	{
 		static::preload();
+
 		return static::fromArrayDeep(static::$preloaded);
 	}
 
@@ -268,6 +269,7 @@ class Report extends \Model\Model_Base
 	public static function count()
 	{
 		static::preload();
+
 		return count(static::$preloaded);
 	}
 
@@ -330,11 +332,10 @@ class Report extends \Model\Model_Base
 
 		$new->reason = $reason;
 
-		if ($ip_reporter === null)
+		if ($new->ip_reporter === null)
 		{
-			$ip_reporter = \Input::ip_decimal();
+			$new->ip_reporter = \Input::ip_decimal();
 		}
-		$new->ip_reporter = $ip_reporter;
 
 		// check how many reports have been sent in the last hour to prevent spam
 		$row = \DC::qb()
