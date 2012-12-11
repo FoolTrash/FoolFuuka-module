@@ -23,7 +23,18 @@ $model_dir = __DIR__.'/classes/Foolz/Foolfuuka/Model/';
 
 \Autoloader::add_core_namespace('Foolz\Foolfuuka\Model');
 
+\Profiler::mark('Start stringparser-bbcode initialization');
+\Profiler::mark_memory(false, 'Start stringparser-bbcode initialization');
+
 \Package::load('stringparser-bbcode', __DIR__.'/packages/stringparser-bbcode/');
+
+\Profiler::mark('End stringparser-bbcode initialization, start geoip_codes initialization');
+\Profiler::mark_memory(false, 'End stringparser-bbcode initialization, start geoip_codes initialization');
+
+\Config::load('foolfuuka::geoip_codes', 'geoip_codes');
+
+\Profiler::mark('End geoip_codes initialization');
+\Profiler::mark_memory(false, 'End  geoip_codes initialization');
 
 if (\Auth::has_access('comment.reports'))
 {

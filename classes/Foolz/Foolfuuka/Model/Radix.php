@@ -737,7 +737,6 @@ class Radix
 	public static function removeLeftoverDirs($echo = FALSE)
 	{
 		$all = static::getAll();
-
 		$array = [];
 
 		// get all directories

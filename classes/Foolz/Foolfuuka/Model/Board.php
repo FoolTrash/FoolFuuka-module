@@ -339,6 +339,7 @@ class Board
 		{
 			$result['num'] = $num;
 			$result['subnum'] = 0;
+
 			return $result;
 		}
 
@@ -495,6 +496,7 @@ class Board
 		\Profiler::mark_memory($this->comments, 'Board $this->comments');
 		\Profiler::mark_memory($this, 'Board $this');
 		\Profiler::mark('Board::getLatestComments End');
+
 		return $this;
 	}
 
@@ -526,6 +528,8 @@ class Board
 			{
 				// these two are the same
 				case 'by_post':
+					// no break
+
 				case 'by_thread':
 					$query_threads = \DC::qb()
 						->select('COUNT(thread_num) AS threads')
@@ -550,6 +554,7 @@ class Board
 
 		\Profiler::mark_memory($this, 'Board $this');
 		\Profiler::mark('Board::getLatestCount End');
+
 		return $this;
 	}
 

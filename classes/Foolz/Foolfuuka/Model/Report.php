@@ -260,7 +260,6 @@ class Report
 	public static function getAll()
 	{
 		static::preload();
-		
 		return static::fromArrayDeep(static::$preloaded);
 	}
 
@@ -339,7 +338,6 @@ class Report
 		{
 			$new->ip_reporter = \Input::ip_decimal();
 		}
-		$new->ip_reporter = $ip_reporter;
 
 		// check how many reports have been sent in the last hour to prevent spam
 		$row = \DC::qb()
