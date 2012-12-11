@@ -1,8 +1,8 @@
 <?php
 
-namespace Foolfuuka;
+namespace Foolz\Foolfuuka\Controller;
 
-class Controller_Chan extends \Controller_Common
+class Chan extends \Controller
 {
 
 	protected $_theme = null;
@@ -47,8 +47,8 @@ class Controller_Chan extends \Controller_Common
 				'archive_url'  => \Uri::base(),
 				'system_url'  => \Uri::base(),
 				'api_url'   => \Uri::base(),
-				'cookie_domain' => \Config::get('foolframe.config.cookie_domain'),
-				'cookie_prefix' => \Config::get('foolframe.config.cookie_prefix'),
+				'cookie_domain' => \Foolz\Config\Config::get('foolz/foolframe', 'package', 'config.cookie_domain'),
+				'cookie_prefix' => \Foolz\Config\Config::get('foolz/foolframe', 'package', 'config.cookie_prefix'),
 				'selected_theme' => isset($this->_theme)?$this->_theme->get_selected_theme():'',
 				'csrf_token_key' => \Config::get('security.csrf_token_key'),
 				'images' => array(
@@ -87,7 +87,7 @@ class Controller_Chan extends \Controller_Common
 		if (isset($segments[0]) && $segments[0] !== '_')
 		{
 
-			$this->_radix = \Radix::set_selected_by_shortname($method);
+			$this->_radix = \Radix::setSelectedByShortname($method);
 
 			if ($this->_radix)
 			{
@@ -262,13 +262,17 @@ class Controller_Chan extends \Controller_Common
 		\Profiler::mark('Controller Chan::latest Start');
 		try
 		{
-			$board = \Board::forge()->get_latest()->set_radix($this->_radix)->set_page($page)->set_options($options);
+			$board = \Board::forge()
+				->getLatest()
+				->setRadix($this->_radix)
+				->setPage($page)
+				->setOptions($options);
 
 			// execute in case there's more exceptions to handle
-			$board->get_comments();
-			$board->get_count();
+			$board->getComments();
+			$board->getCount();
 		}
-		catch (Model\BoardException $e)
+		catch (Foolz\Foolfuuka\Model\BoardException $e)
 		{
 			\Profiler::mark('Controller Chan::latest End Prematurely');
 			return $this->error($e->getMessage());
@@ -301,7 +305,7 @@ class Controller_Chan extends \Controller_Common
 			'pagination' => array(
 				'base_url' => \Uri::create(array($this->_radix->shortname, $options['order'] === 'ghost' ? 'ghost' : 'page')),
 				'current_page' => $page,
-				'total' => floor($board->get_count()/$options['per_page']+1)
+				'total' => $board->getPages()
 			)
 		));
 
@@ -329,7 +333,7 @@ class Controller_Chan extends \Controller_Common
 
 	public function radix_last($limit = 0, $num = 0)
 	{
-		if (!\Board::is_natural($limit) || $limit < 1)
+		if ( ! ctype_digit((string) $limit) || $limit < 1)
 		{
 			return $this->action_404();
 		}
@@ -345,32 +349,35 @@ class Controller_Chan extends \Controller_Common
 
 		try
 		{
-			$board = \Board::forge()->get_thread($num)->set_radix($this->_radix)->set_options($options);
+			$board = \Board::forge()
+				->getThread($num)
+				->setRadix($this->_radix)
+				->setOptions($options);
 
 			// execute in case there's more exceptions to handle
-			$thread = $board->get_comments();
+			$thread = $board->getComments();
 		}
-		catch (Model\BoardThreadNotFoundException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardThreadNotFoundException $e)
 		{
 			\Profiler::mark('Controller Chan::thread End Prematurely');
 			return $this->radix_post($num);
 		}
-		catch (Model\BoardException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardException $e)
 		{
 			\Profiler::mark('Controller Chan::thread End Prematurely');
 			return $this->error($e->getMessage());
 		}
 
 		// get the latest doc_id and latest timestamp for realtime stuff
-		$latest_doc_id = $board->get_highest('doc_id')->doc_id;
-		$latest_timestamp = $board->get_highest('timestamp')->timestamp;
+		$latest_doc_id = $board->getHighest('doc_id')->doc_id;
+		$latest_timestamp = $board->getHighest('timestamp')->timestamp;
 
 		// check if we can determine if posting is disabled
 		try
 		{
-			$thread_status = $board->check_thread_status();
+			$thread_status = $board->checkThreadStatus();
 		}
-		catch (Model\BoardThreadNotFoundException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardThreadNotFoundException $e)
 		{
 			\Profiler::mark('Controller Chan::thread End Prematurely');
 			return $this->error();
@@ -416,12 +423,15 @@ class Controller_Chan extends \Controller_Common
 	{
 		try
 		{
-			$board = \Board::forge()->get_threads()->set_radix($this->_radix)->set_page($page)
-				->set_options('per_page', 100);
+			$board = \Board::forge()
+				->getThreads()
+				->setRadix($this->_radix)
+				->setPage($page)
+				->setOptions('per_page', 100);
 
-			$comments = $board->get_comments();
+			$comments = $board->getComments();
 		}
-		catch (Model\BoardException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardException $e)
 		{
 			return $this->error($e->getMessage());
 		}
@@ -431,11 +441,10 @@ class Controller_Chan extends \Controller_Common
 			'pagination' => array(
 				'base_url' => \Uri::create(array($this->_radix->shortname, 'gallery')),
 				'current_page' => $page,
-				'total' => floor($board->get_count()/100+1)
+				'total' => $board->getPages()
 			)
 		));
 		return \Response::forge($this->_theme->build('gallery'));
-
 	}
 
 
@@ -443,7 +452,7 @@ class Controller_Chan extends \Controller_Common
 	{
 		try
 		{
-			if (\Input::post('post') || ! \Board::is_valid_post_number($num))
+			if (\Input::post('post') || ! \Board::isValidPostNumber($num))
 			{
 				// obtain post number and unset search string
 				preg_match('/(?:^|\/)(\d+)(?:[_,]([0-9]*))?/', \Input::post('post') ? : $num, $post);
@@ -452,15 +461,18 @@ class Controller_Chan extends \Controller_Common
 				\Response::redirect(\Uri::create(array($this->_radix->shortname, 'post', implode('_', $post))), 'location', 301);
 			}
 
-			$board = \Board::forge()->get_post()->set_radix($this->_radix)->set_options('num', $num);
+			$board = \Board::forge()
+				->getPost()
+				->setRadix($this->_radix)
+				->setOptions('num', $num);
 
-			$comments = $board->get_comments();
+			$comments = $board->getComments();
 		}
-		catch (Model\BoardMalformedInputException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardMalformedInputException $e)
 		{
 			return $this->error(__('The post number you submitted is invalid.'));
 		}
-		catch (Model\BoardPostNotFoundException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardPostNotFoundException $e)
 		{
 			return $this->error(__('The post you are looking for does not exist.'));
 		}
@@ -516,7 +528,7 @@ class Controller_Chan extends \Controller_Common
 		// Fetch the POSTS with same media hash and generate the IMAGEPOSTS.
 		$page = intval($page);
 		return \Response::redirect(\Uri::create(array(
-			\Radix::get_selected()->shortname, 'search', 'image', $hash, 'order', 'desc', 'page', $page)), 'location', 301);
+			$this->_radix->shortname, 'search', 'image', $hash, 'order', 'desc', 'page', $page)), 'location', 301);
 	}
 
 
@@ -526,7 +538,7 @@ class Controller_Chan extends \Controller_Common
 	public function radix_full_image($filename)
 	{
 		// Check if $filename is valid.
-		if ( ! in_array(\Input::extension(), array('gif', 'jpg', 'png', 'pdf')) || ! \Board::is_natural(substr($filename, 0, 13)))
+		if ( ! in_array(\Input::extension(), array('gif', 'jpg', 'png', 'pdf')) || ! ctype_digit((string) substr($filename, 0, 13)))
 		{
 			return $this->action_404(__('The filename submitted is not compatible with the system.'));
 		}
@@ -535,14 +547,14 @@ class Controller_Chan extends \Controller_Common
 		{
 			$media = \Media::get_by_filename($this->_radix, $filename.'.'.\Input::extension());
 		}
-		catch (Model\MediaException $e)
+		catch (\Foolz\Foolfuuka\Model\MediaException $e)
 		{
 			return $this->action_404(__('The image was never in our databases.'));
 		}
 
-		if ($media->get_media_link())
+		if ($media->getMediaLink())
 		{
-			return \Response::redirect($media->get_media_link(), 'location', 303);
+			return \Response::redirect($media->getMediaLink(), 'location', 303);
 		}
 
 		return \Response::redirect(
@@ -656,7 +668,7 @@ class Controller_Chan extends \Controller_Common
 
 							// avoid setting this if we're just searching on all the boards
 							$sphinx_boards = array();
-							foreach (\Radix::get_all() as $k => $b)
+							foreach (\Radix::getAll() as $k => $b)
 							{
 								if ($b->sphinx)
 								{
@@ -759,16 +771,16 @@ class Controller_Chan extends \Controller_Common
 		try
 		{
 			$board = \Search::forge()
-				->get_search($search)
-				->set_radix($this->_radix)
-				->set_page($search['page'] ? $search['page'] : 1);
-			$board->get_comments();
+				->getSearch($search)
+				->setRadix($this->_radix)
+				->setPage($search['page'] ? $search['page'] : 1);
+			$board->getComments();
 		}
-		catch (Model\SearchException $e)
+		catch (\Foolz\Foolfuuka\Model\SearchException $e)
 		{
 			return $this->error($e->getMessage());
 		}
-		catch (Model\BoardException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardException $e)
 		{
 			return $this->error($e->getMessage());
 		}
@@ -898,9 +910,9 @@ class Controller_Chan extends \Controller_Common
 	{
 		try
 		{
-			$bans = \Ban::get_by_ip(\Input::ip_decimal());
+			$bans = \Ban::getByIp(\Input::ip_decimal());
 		}
-		catch (\Foolfuuka\Model\BanException $e)
+		catch (\Foolz\Foolfuuka\Model\BanException $e)
 		{
 			return $this->error(__('It doesn\'t look like you\'re banned.'));
 		}
@@ -1043,10 +1055,10 @@ class Controller_Chan extends \Controller_Common
 		{
 			try
 			{
-				$media = \Media::forge_from_upload($this->_radix);
+				$media = \Media::forgeFromUpload($this->_radix);
 				$media->spoiler = isset($data['spoiler']) && $data['spoiler'];
 			}
-			catch (Model\MediaUploadNoFileException $e)
+			catch (\Foolz\Foolfuuka\Model\MediaUploadNoFileException $e)
 			{
 				if (\Input::is_ajax())
 				{
@@ -1057,7 +1069,7 @@ class Controller_Chan extends \Controller_Common
 					return $this->error($e->getMessage());
 				}
 			}
-			catch (Model\MediaUploadException $e)
+			catch (\Foolz\Foolfuuka\Model\MediaUploadException $e)
 			{
 				if (\Input::is_ajax())
 				{
@@ -1099,11 +1111,11 @@ class Controller_Chan extends \Controller_Common
 			try
 			{
 				$data['poster_ip'] = \Input::ip_decimal();
-				$comment = \Comment::forge((object) $data, $this->_radix, array('clean' => false));
+				$comment = new \Foolz\Foolfuuka\Model\CommentInsert($data, $this->_radix, array('clean' => false));
 				$comment->media = $media;
 				$comment->insert();
 			}
-			catch (Model\CommentSendingRequestCaptchaException $e)
+			catch (\Foolz\Foolfuuka\Model\CommentSendingRequestCaptchaException $e)
 			{
 				if (\Input::is_ajax())
 				{
@@ -1114,7 +1126,7 @@ class Controller_Chan extends \Controller_Common
 					return $this->error(__('Your message looked like spam. Make sure you have JavaScript enabled to display the reCAPTCHA to submit the comment.'));
 				}
 			}
-			catch (Model\CommentSendingException $e)
+			catch (\Foolz\Foolfuuka\Model\CommentSendingException $e)
 			{
 				if (\Input::is_ajax())
 				{
@@ -1141,28 +1153,28 @@ class Controller_Chan extends \Controller_Common
 		if (\Input::is_ajax())
 		{
 			$latest_doc_id = \Input::post('latest_doc_id');
-			if ($latest_doc_id && \Board::is_natural($latest_doc_id))
+			if ($latest_doc_id && ctype_digit((string) $latest_doc_id))
 			{
 				try
 				{
 					$board = \Board::forge()
-						->get_thread($comment->thread_num)
-						->set_radix($this->_radix)
-						->set_api(array('theme' => \Input::post('theme'), 'board' => false))
-						->set_options(array(
+						->getThread($comment->thread_num)
+						->setRadix($this->_radix)
+						->setApi(array('theme' => \Input::post('theme'), 'board' => false))
+						->setOptions(array(
 							'type' => 'from_doc_id',
 							'latest_doc_id' => $latest_doc_id,
 							'realtime' => true,
 							'controller_method' => $limit ? 'last/'.$limit : 'thread'
 					));
 
-					$comments = $board->get_comments();
+					$comments = $board->getComments();
 				}
-				catch(Model\BoardThreadNotFoundException $e)
+				catch (\Foolz\Foolfuuka\Model\BoardThreadNotFoundException $e)
 				{
 					return $this->error(__("Thread not found."));
 				}
-				catch (Model\BoardException $e)
+				catch (\Foolz\Foolfuuka\Model\BoardException $e)
 				{
 					return $this->error(__("Unknown error."));
 				}
@@ -1171,7 +1183,7 @@ class Controller_Chan extends \Controller_Common
 			}
 			else
 			{
-				$comment_api = \Comment::forge_for_api($comment, $this->_radix,
+				$comment_api = \Comment::forgeForApi($comment, $this->_radix,
 					array('board' => false, 'theme' => true), array('controller_method' => $limit ? 'last/'.$limit : 'thread'));
 				return \Response::forge(
 					json_encode(array(

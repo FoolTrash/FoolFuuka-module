@@ -1,6 +1,6 @@
 <?php
 
-namespace Foolfuuka;
+namespace Foolz\Foolfuuka\Controller\Api;
 
 class Controller_Api_Chan extends \Controller_Rest
 {
@@ -60,7 +60,7 @@ class Controller_Api_Chan extends \Controller_Rest
 			return false;
 		}
 
-		if(!$this->_radix = \Radix::set_selected_by_shortname($board))
+		if(!$this->_radix = \Radix::setSelectedByShortname($board))
 		{
 			//$this->response(array('error' => __('The board you selected doesn\'t exist')), 404);
 			return false;
@@ -92,7 +92,7 @@ class Controller_Api_Chan extends \Controller_Rest
 			return $this->response(array('error' => __("You are missing the 'num' parameter.")), 404);
 		}
 
-		if (!\Board::is_natural($num))
+		if ( ! ctype_digit((string) $num))
 		{
 			return $this->response(array('error' => __("Invalid value for 'num'.")), 404);
 		}
@@ -104,44 +104,44 @@ class Controller_Api_Chan extends \Controller_Rest
 			// build an array if we have more specifications
 			if ($latest_doc_id)
 			{
-				if (!\Board::is_natural($latest_doc_id))
+				if ( ! ctype_digit((string) $latest_doc_id))
 				{
 					return $this->response(array('error' => __("The value for 'latest_doc_id' is malformed.")), 404);
 				}
 
 				$board = \Board::forge()
-					->get_thread($num)
-					->set_radix($this->_radix)
-					->set_api(array('theme' => \Input::get('theme'), 'board' => false))
-					->set_options(array(
+					->getThread($num)
+					->setRadix($this->_radix)
+					->setApi(array('theme' => \Input::get('theme'), 'board' => false))
+					->setOptions(array(
 						'type' => 'from_doc_id',
 						'latest_doc_id' => $latest_doc_id,
 						'realtime' => true,
 						'controller_method' =>
-							\Board::is_natural(\Input::get('last_limit')) ? 'last/'.\Input::get('last_limit') : 'thread'
+							ctype_digit((string) \Input::get('last_limit')) ? 'last/'.\Input::get('last_limit') : 'thread'
 				));
 
-				return $this->response($board->get_comments(), 200);
+				return $this->response($board->getComments(), 200);
 			}
 			else
 			{
 				$board = \Board::forge()
-					->get_thread($num)
-					->set_radix($this->_radix)
-					->set_api(array('theme' => \Input::get('theme'), 'board' => false))
-					->set_options(array(
+					->getThread($num)
+					->setRadix($this->_radix)
+					->setApi(array('theme' => \Input::get('theme'), 'board' => false))
+					->setOptions(array(
 						'type' => 'thread',
 				));
 
-				return $this->response($board->get_comments(), 200);
+				return $this->response($board->getComments(), 200);
 			}
 
 		}
-		catch(Model\BoardThreadNotFoundException $e)
+		catch(\Foolz\Foolfuuka\Model\BoardThreadNotFoundException $e)
 		{
 			return $this->response(array('error' => __("Thread not found.")), 200);
 		}
-		catch (Model\BoardException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardException $e)
 		{
 			return $this->response(array('error' => __("Unknown error.")), 500);
 		}
@@ -163,7 +163,7 @@ class Controller_Api_Chan extends \Controller_Rest
 			return $this->response(array('error' => __("You are missing the 'num' parameter.")), 404);
 		}
 
-		if (!\Board::is_valid_post_number($num))
+		if (!\Board::isValidPostNumber($num))
 		{
 			return $this->response(array('error' => __("Invalid value for 'num'.")), 404);
 		}
@@ -171,18 +171,18 @@ class Controller_Api_Chan extends \Controller_Rest
 		try
 		{
 			$board = \Board::forge()
-				->get_post($num)
-				->set_radix($this->_radix)
-				->set_api(array('board' => false, 'theme' => $theme));
+				->getPost($num)
+				->setRadix($this->_radix)
+				->setApi(array('board' => false, 'theme' => $theme));
 
 			// no index for the single post
-			$this->response(current($board->get_comments()), 200);
+			$this->response(current($board->getComments()), 200);
 		}
-		catch(Model\BoardPostNotFoundException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardPostNotFoundException $e)
 		{
 			return $this->response(array('error' => __("Post not found.")), 200);
 		}
-		catch (Model\BoardException $e)
+		catch (\Foolz\Foolfuuka\Model\BoardException $e)
 		{
 			return $this->response(array('error' => $e->getMessage()), 404);
 		}
@@ -207,7 +207,7 @@ class Controller_Api_Chan extends \Controller_Rest
 			{
 				\Report::add($this->_radix, \Input::post('doc_id'), \Input::post('reason'));
 			}
-			catch (Model\ReportException $e)
+			catch (\Foolz\Foolfuuka\Model\ReportException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 404);
 			}
@@ -221,7 +221,7 @@ class Controller_Api_Chan extends \Controller_Rest
 			{
 				\Report::add($this->_radix, \Input::post('media_id'), \Input::post('reason'), null, 'media_id');
 			}
-			catch (Model\ReportException $e)
+			catch (\Foolz\Foolfuuka\Model\ReportException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 404);
 			}
@@ -234,20 +234,20 @@ class Controller_Api_Chan extends \Controller_Rest
 			try
 			{
 				$comments = \Board::forge()
-					->get_post()
-					->set_options('doc_id', \Input::post('doc_id'))
-					->set_comment_options('clean', false)
-					->set_radix($this->_radix)
-					->get_comments();
+					->getPost()
+					->setOptions('doc_id', \Input::post('doc_id'))
+					->setCommentOptions('clean', false)
+					->setRadix($this->_radix)
+					->getComments();
 
 				$comment = current($comments);
 				$comment->delete(\Input::post('password'));
 			}
-			catch (Model\BoardException $e)
+			catch (\Foolz\Foolfuuka\Model\BoardException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 200);
 			}
-			catch (Model\CommentDeleteWrongPassException $e)
+			catch (\Foolz\Foolfuuka\Model\CommentDeleteWrongPassException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 200);
 			}
@@ -278,9 +278,9 @@ class Controller_Api_Chan extends \Controller_Rest
 		{
 			try
 			{
-				\Report::delete(\Input::post('id')); die('here');
+				\Report::delete(\Input::post('id'));
 			}
-			catch (Model\ReportException $e)
+			catch (\Foolz\Foolfuuka\Model\ReportException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 404);
 			}
@@ -293,15 +293,15 @@ class Controller_Api_Chan extends \Controller_Rest
 			try
 			{
 				$comments = \Board::forge()
-					->get_post()
-					->set_options('doc_id', \Input::post('id'))
-					->set_radix($this->_radix)
-					->get_comments();
+					->getPost()
+					->setOptions('doc_id', \Input::post('id'))
+					->setRadix($this->_radix)
+					->getComments();
 
 				$comment = current($comments);
 				$comment->delete();
 			}
-			catch (Model\BoardException $e)
+			catch (\Foolz\Foolfuuka\Model\BoardException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 404);
 			}
@@ -313,9 +313,9 @@ class Controller_Api_Chan extends \Controller_Rest
 		{
 			try
 			{
-				\Media::get_by_media_id($this->_radix, \Input::post('id'))->delete(true, true, true);
+				\Media::getByMediaId($this->_radix, \Input::post('id'))->delete(true, true, true);
 			}
-			catch (Model\MediaNotFoundException $e)
+			catch (\Foolz\Foolfuuka\Model\MediaNotFoundException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 404);
 			}
@@ -333,9 +333,9 @@ class Controller_Api_Chan extends \Controller_Rest
 
 			try
 			{
-				\Media::get_by_media_id($this->_radix, \Input::post('id'))->ban($global);
+				\Media::getByMediaId($this->_radix, \Input::post('id'))->ban($global);
 			}
-			catch (Model\MediaNotFoundException $e)
+			catch (\Foolz\Foolfuuka\Model\MediaNotFoundException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 404);
 			}
@@ -353,7 +353,7 @@ class Controller_Api_Chan extends \Controller_Rest
 					\Input::post('board_ban') === 'global' ? array() : array($this->_radix->id)
 				);
 			}
-			catch (Model\BanException $e)
+			catch (\Foolz\Foolfuuka\Model\BanException $e)
 			{
 				return $this->response(array('error' => $e->getMessage()), 404);
 			}
